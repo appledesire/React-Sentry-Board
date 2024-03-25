@@ -1,0 +1,9 @@
+# Ignore everything
+*
+
+!/self-hosted
+!/.volta.json
+!/package.json
+!/yarn.lock
+!/dist/requirements-frozen.txt
+!/dist/*.whl

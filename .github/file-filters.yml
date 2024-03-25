@@ -1,0 +1,132 @@
+# This is used by the action https://github.com/dorny/paths-filter
+
+sentry_specific_workflow: &sentry_specific_workflow
+  - added|modified: '.github/workflows/frontend.yml'
+sentry_specific_test_files: &sentry_specific_test_files
+  - added|modified: 'tests/js/**/*'
+  - added|deleted|modified: 'fixtures/search-syntax/**/*'
+  - added|deleted|modified: 'fixtures/js-stubs/**/*'
+
+# Provides list of changed app files to lint against (stylelint)
+lintable_css_in_js_modified: &lintable_css_in_js_modified
+  - added|modified: '**/*.[tj]{s,sx}'
+
+# Trigger for when we must run full lint (stylelint)
+lintable_css_in_js_rules_changed: &lintable_css_in_js_rules_changed
+  - *sentry_specific_workflow
+  - added|modified: '.github/file-filters.yml'
+  - added|modified: 'yarn.lock'
+  - added|deleted|modified: 'stylelint.*'
+
+# Provides list of changed files to lint against (eslint)
+lintable_modified: &lintable_modified
+  - added|modified: '**/*.[tj]{s,sx}'
+  - added|modified: '**/*.{html,less,json,yml,md}'
+
+# Trigger for when we must run full lint (eslint)
+lintable_rules_changed: &lintable_rules_changed
+  - *sentry_specific_workflow
+  - added|modified: '.github/file-filters.yml'
+  - added|modified: 'package.json'
+  - added|modified: 'yarn.lock'
+  - added|deleted|modified: '.prettierignore'
+  - added|deleted|modified: '.eslintignore'
+  - added|deleted|modified: '.eslint*'
+
+# Provides list of changed files to test (jest)
+# getsentry/sentry does not use this directly, instead we shard tests inside jest.config.js
+testable_modified: &testable_modified
+  - added|modified: 'package.json'
+  - added|modified: 'static/**/*.[tj]{s,sx}'
+  - *sentry_specific_test_files
+
+# Trigger for when we must run full tests (jest)
+testable_rules_changed: &testable_rules_changed
+  - *sentry_specific_workflow
+  - added|modified: '.github/file-filters.yml'
+  - added|modified: 'jest.config.ts'
+
+# Trigger whether to run tsc or not
+# There's no "rules_changed" for this, because we run it for all files always
+# getsentry/sentry does not use this directly, instead frontend_all is a superset to trigger tsc
+typecheckable_rules_changed: &typecheckable_rules_changed
+  - *sentry_specific_workflow
+  - added|modified: '.github/file-filters.yml'
+  - added|deleted|modified: '**/tsconfig*.json'
+  - added|deleted|modified: 'static/**/*.[tj]{s,sx}'
+
+# Trigger to apply the 'Scope: Frontend' label to PRs
+frontend_all: &frontend_all
+  - *lintable_css_in_js_rules_changed
+  - *lintable_rules_changed
+  - *testable_rules_changed
+  - *typecheckable_rules_changed
+  - added|modified: '{.volta,vercel}.json'
+  - *sentry_specific_workflow
+  - *sentry_specific_test_files
+
+# Also used in `getsentry-dispatch.yml` to dispatch backend tests on getsentry
+backend_dependencies: &backend_dependencies
+  - 'requirements-*.txt'
+
+backend_build_changes: &backend_build_changes
+  # If you change this line make sure that workflows using this action (e.g. acceptance, api_docs)
+  # *and* file-filters would be updated as well
+  - '.github/actions/setup-sentry/action.yml'
+  - '.github/workflows/backend.yml'
+  - '.pre-commit-config.yaml'
+  - 'Makefile'
+  - 'pyproject.toml'
+
+# `backend_src` filters on files that are backend changes excluding
+# changes to the tests/ directory.
+# If you want to filter on *all* backend files, use the `backend_all` filter.
+backend_src: &backend_src
+  - *backend_build_changes
+  - *backend_dependencies
+  - '!(tests)/**/*.py'
+  - '**/*.sh'
+  - '**/*.pysnap'
+  - 'src/sentry/!(static)/**'
+  - 'src/sentry_plugins/**/*.html'
+  - 'migrations_lockfile.txt'
+  - 'config/**/*'
+  - 'fixtures/search-syntax/**/*'
+
+backend_all: &backend_all
+  - *backend_src
+  - '**/*.py'
+  - '**/*.pyi'
+
+# This is the ultimate controller for acceptance.yml
+acceptance: &acceptance
+  - *frontend_all
+  - *backend_all
+  # This is verbose because backend_build_changes includes it, however,
+  - '.github/actions/setup-sentry/action.yml'
+  - '.github/workflows/acceptance.yml'
+
+api_docs: &api_docs
+  - *backend_all
+  - 'api-docs/**'
+  - 'tests/apidocs/**'
+
+# This is the ultimate controller for backend.yml
+backend_any_type: &backend_any_type
+  - *backend_all
+  - *api_docs
+
+migrations_added:
+  - added:
+      - 'src/sentry/migrations/*'
+      - 'src/sentry/feedback/migrations/*'
+      - 'src/sentry/hybridcloud/migrations/*'
+      - 'src/sentry/replays/migrations/*'
+
+# These files will trigger our workflow to check if lockfile
+# updates are needed
+migration_lockfile:
+  - *backend_dependencies
+  - '**/*.py'
+  - .github/workflows/check-if-migration-is-required.yml
+  - .github/workflows/scripts/migration-check.sh

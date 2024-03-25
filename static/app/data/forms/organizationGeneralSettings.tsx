@@ -1,0 +1,123 @@
+import type {JsonFormObject} from 'sentry/components/forms/types';
+import ExternalLink from 'sentry/components/links/externalLink';
+import {t, tct} from 'sentry/locale';
+import type {MemberRole} from 'sentry/types';
+import slugify from 'sentry/utils/slugify';
+
+// Export route to make these forms searchable by label/help
+export const route = '/settings/:orgId/';
+
+const formGroups: JsonFormObject[] = [
+  {
+    // Form "section"/"panel"
+    title: t('General'),
+    fields: [
+      {
+        name: 'slug',
+        type: 'string',
+        required: true,
+        label: t('Organization Slug'),
+        help: t('A unique ID used to identify this organization'),
+        transformInput: slugify,
+        saveOnBlur: false,
+        saveMessageAlertType: 'info',
+        saveMessage: t(
+          'You will be redirected to the new organization slug after saving'
+        ),
+      },
+      {
+        name: 'name',
+        type: 'string',
+        required: true,
+        label: t('Display Name'),
+        help: t('A human-friendly name for the organization'),
+      },
+      {
+        name: 'isEarlyAdopter',
+        type: 'boolean',
+        label: t('Early Adopter'),
+        help: tct("Opt-in to [link:new features] before they're released to the public", {
+          link: (
+            <ExternalLink href="https://docs.sentry.io/product/accounts/early-adopter/" />
+          ),
+        }),
+      },
+      {
+        name: 'aiSuggestedSolution',
+        type: 'boolean',
+        label: t('AI Suggested Solution'),
+        help: tct(
+          'Opt-in to [link:ai suggested solution] to get AI help on how to solve an issue.',
+          {
+            link: (
+              <ExternalLink href="https://docs.sentry.io/product/issues/issue-details/ai-suggested-solution/" />
+            ),
+          }
+        ),
+      },
+    ],
+  },
+
+  {
+    title: 'Membership',
+    fields: [
+      {
+        name: 'defaultRole',
+        type: 'select',
+        required: true,
+        label: t('Default Role'),
+        // seems weird to have choices in initial form data
+        choices: ({initialData} = {}) =>
+          initialData?.orgRoleList?.map((r: MemberRole) => [r.id, r.name]) ?? [],
+        help: t('The default role new members will receive'),
+        disabled: ({access}) => !access.has('org:admin'),
+      },
+      {
+        name: 'openMembership',
+        type: 'boolean',
+        required: true,
+        label: t('Open Membership'),
+        help: t('Allow organization members to freely join any team'),
+      },
+      {
+        name: 'eventsMemberAdmin',
+        type: 'boolean',
+        label: t('Let Members Delete Events'),
+        help: t(
+          'Allow members to delete events (including the delete & discard action) by granting them the `event:admin` scope.'
+        ),
+      },
+      {
+        name: 'alertsMemberWrite',
+        type: 'boolean',
+        label: t('Let Members Create and Edit Alerts'),
+        help: t(
+          'Allow members to create, edit, and delete alert rules by granting them the `alerts:write` scope.'
+        ),
+      },
+      {
+        name: 'attachmentsRole',
+        type: 'select',
+        choices: ({initialData = {}}) =>
+          initialData?.orgRoleList?.map((r: MemberRole) => [r.id, r.name]) ?? [],
+        label: t('Attachments Access'),
+        help: t(
+          'Role required to download event attachments, such as native crash reports or log files.'
+        ),
+        visible: ({features}) => features.has('event-attachments'),
+      },
+      {
+        name: 'debugFilesRole',
+        type: 'select',
+        choices: ({initialData = {}}) =>
+          initialData?.orgRoleList?.map((r: MemberRole) => [r.id, r.name]) ?? [],
+        label: t('Debug Files Access'),
+        help: t(
+          'Role required to download debug information files, proguard mappings and source maps.'
+        ),
+      },
+    ],
+  },
+];
+
+export default formGroups;

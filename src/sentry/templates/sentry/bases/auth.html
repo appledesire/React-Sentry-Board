@@ -1,0 +1,34 @@
+{% extends "sentry/bases/modal.html" %}
+
+{% load crispy_forms_tags %}
+{% load i18n %}
+
+{% block wrapperclass %}narrow auth org-login{% endblock %}
+
+{% block content %}
+<div class="pattern-bg"></div>
+
+<div class="box">
+  <div class="auth-sidebar">
+    <a href="https://sentry.io/welcome/">
+      <span class="icon-sentry-logo"></span>
+    </a>
+  </div>
+  <section class="org-login">
+    {% block auth_container %}
+      <div class="auth-container p-y-2">
+        {% block auth_main %}{% endblock %}
+        <p>
+          {% blocktrans %}
+            Need help with your account?  Click <a class="help-center-link" href="https://help.sentry.io/">here</a> to check out our help center.
+          {% endblocktrans %}
+        </p>
+      </div>
+    {% endblock %}
+  </section>
+</div>
+
+{% endblock %}
+
+{% block footer %}
+{% endblock %}
